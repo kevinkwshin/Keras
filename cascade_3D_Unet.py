@@ -138,3 +138,11 @@ def load_model(input_shape, num_labels, axis=-1, base_filter=32, depth_size=4, s
         output_img = ThresholdedReLU(theta=0.5)(output_img)
     model = Model(inputs=input_img, outputs=output_img)
     return model
+
+model = load_model(input_shape=input_shape,
+                    num_labels=num_output,
+                    base_filter=16,
+                    depth_size=3,
+                    se_res_block=True,
+                    se_ratio=16,
+                    last_relu=True)
