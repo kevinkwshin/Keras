@@ -17,10 +17,14 @@ import SimpleITK as sitk
 from keras.utils import to_categorical
 from keras import backend as K
 
-def resize(data, img_dep=200., img_rows=200., img_cols=200.):
-    resize_factor = (img_dep/data.shape[0], img_rows/data.shape[1], img_cols/data.shape[2])
-    data = ndimage.zoom(data, resize_factor, order=0, mode='constant', cval=0.0)
-    return data
+def augmentation_keras(img, mask):
+    
+    seed = np.random.randint(0, 100, 1)[0]
+    for img in datagen.flow(img, batch_size=1, seed = seed):
+        break
+    for mask in datagen.flow(mask, batch_size=1, seed = seed):
+        break
+    return img, mask
 
 def random_rotation(x, rg, row_index=2, col_index=3, dep_index = 1, channel_index=0,
                     fill_mode='nearest', cval=0.):
