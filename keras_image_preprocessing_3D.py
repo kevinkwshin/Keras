@@ -558,7 +558,8 @@ class ImageDataGenerator(object):
                     label = resize(label,img_dep, img_rows, img_cols)
                     label_onehot = to_categorical(label)
                     
-                    y_stack[i,:,:,:,:] = label_onehot[:,:,:,1:]
+#                     y_stack[i,:,:,:,:] = label_onehot[:,:,:,1:]
+                    y_stack[i,:,:,:,:] = label_onehot[:,:,:,:]
 
                 X = x_stack
                 Y = y_stack
