@@ -1,29 +1,25 @@
-# classes for data loading and preprocessing
+
 class Spine3D_Dataset:
     """
     Args:
         list_image (str): lists of path to images
         list_mask (str) : lists of path to masks
         augmentation (albumentations.Compose): data transfromation pipeline 
-            (e.g. flip, scale, etc.)
-    
+            (e.g. flip, scale, etc.)    
     """
-    
     def __init__(
             self, 
             x_list,
             y_list,
-            phase,
     ):
         
         self.x_list = x_list
         self.y_list = y_list
-        self.phase = phase
+        self.augmentation = augmentation
 
     def __getitem__(self, index):
         
-        
-        phase = self.phase        
+        augmentation = self.augmentation     
         x_idx = self.x_list[index]
         y_idx = self.y_list[index]
 
@@ -38,16 +34,15 @@ class Spine3D_Dataset:
         mask = data_load_nii(y_idx,return_array=True)
         mask = label_resize_3D(mask,img_dep,img_rows,img_cols)
         mask = to_categorical(mask)
-        mask = mask[...,1:].astype('uint8')
+        mask = mask[...,1:]
             
         return image, mask
         
     def __len__(self):
         return int(len(self.x_list))
     
-#     
+    
 # class Dataloader(keras.utils.Sequence):
-
 from tensorflow.python.keras.utils.data_utils import Sequence
 class Dataloader(Sequence):
     """Load data from dataset and form batches
@@ -75,7 +70,6 @@ class Dataloader(Sequence):
         for j in range(start, stop):
             data.append(self.dataset[j])
             
-#         print(self.indexes)
         batch = [np.stack(samples, axis=0) for samples in zip(*data)]
         return tuple(batch)
     
