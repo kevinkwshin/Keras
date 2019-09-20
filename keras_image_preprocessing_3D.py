@@ -272,7 +272,7 @@ class ImageDataGenerator(object):
                  dim_ordering='default'):
         if dim_ordering == 'default':
 #             dim_ordering = K.image_dim_ordering()
-            dim_ordering = keras.backend.image_data_format()
+            dim_ordering = K.backend.image_data_format()
         self.__dict__.update(locals())
         self.mean = None
         self.std = None
