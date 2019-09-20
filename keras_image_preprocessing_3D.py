@@ -280,7 +280,7 @@ class ImageDataGenerator(object):
         self.principal_components = None
         self.rescale = rescale
 
-        if dim_ordering not in {'tf', 'th'}:
+        if dim_ordering not in {'channel_last', 'channel_first'}:
             raise Exception('dim_ordering should be "tf" (channel after row and '
                             'column) or "th" (channel before row and column). '
                             'Received arg: ', dim_ordering)
