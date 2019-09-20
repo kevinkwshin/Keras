@@ -14,6 +14,7 @@ import os
 import threading
 
 from keras import backend as K
+import keras
 
 
 def random_rotation(x, rg, row_index=2, col_index=3, dep_index = 1, channel_index=0,
@@ -272,7 +273,7 @@ class ImageDataGenerator(object):
                  dim_ordering='default'):
         if dim_ordering == 'default':
 #             dim_ordering = K.image_dim_ordering()
-            dim_ordering = K.backend.image_data_format()
+            dim_ordering = keras.backend.image_data_format()
         self.__dict__.update(locals())
         self.mean = None
         self.std = None
