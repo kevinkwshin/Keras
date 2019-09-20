@@ -7,46 +7,14 @@ from __future__ import print_function
 
 import numpy as np
 import re
-from scipy import linalg, ndimage
+from scipy import linalg
 import scipy.ndimage as ndi
 from six.moves import range
 import os
 import threading
-import SimpleITK as sitk
 
-import keras
-from keras.utils import to_categorical
 from keras import backend as K
 
-import matplotlib.pyplot as plt
-
-# def resize(data, img_dep=200., img_rows=200., img_cols=200.):
-#     resize_factor = (img_dep/data.shape[0], img_rows/data.shape[1], img_cols/data.shape[2])
-#     data = ndimage.zoom(data, resize_factor, order=0, mode='constant', cval=0.0)
-#     return data
-
-# def z_normalization(img, num_channels):
-#     for i in range(num_channels):
-#         img[..., i] -= np.mean(img[..., i])
-#         img[..., i] /= np.std(img[..., i])
-#     return img
-
-# def image_windowing(img, ww=1800, wl=400):
-#     # img shape [width, height, depth]
-#     # ww & wl: bone preset
-#     maxp = np.max(img)
-#     minp = np.min(img)
-
-#     a = wl - (ww/2)
-#     b = wl + (ww/2)
-#     slope = (maxp - minp)/ww
-#     intercept = maxp - (slope*b)
-
-#     img[img < a] = minp
-#     img[img > b] = maxp
-#     img = np.where((img >= a) & (img <= b),np.round(slope*img + intercept), img)
-
-#     return img
 
 def random_rotation(x, rg, row_index=2, col_index=3, dep_index = 1, channel_index=0,
                     fill_mode='nearest', cval=0.):
@@ -228,14 +196,6 @@ def img_to_array(img, dim_ordering='default'):
 def load_img(path, grayscale=False, target_size=None):
     '''Load an image into PIL format.
     # Arguments
-
-
-train_generator = datagen.flow_from_directory(
-        path_fold,
-        target_size=(150, 150),
-        batch_size=1,
-        class_mode='binary',
-        save_format='nii.gz')
         path: path to image file
         grayscale: boolean
         target_size: None (default to original size)
@@ -311,24 +271,24 @@ class ImageDataGenerator(object):
                  rescale=None,
                  dim_ordering='default'):
         if dim_ordering == 'default':
-            dim_ordering = keras.backend.image_data_format()
+            dim_ordering = K.image_dim_ordering()
         self.__dict__.update(locals())
         self.mean = None
         self.std = None
         self.principal_components = None
         self.rescale = rescale
 
-        if dim_ordering not in {'channels_first', 'channels_last'}:
+        if dim_ordering not in {'tf', 'th'}:
             raise Exception('dim_ordering should be "tf" (channel after row and '
                             'column) or "th" (channel before row and column). '
                             'Received arg: ', dim_ordering)
         self.dim_ordering = dim_ordering
-        if dim_ordering == 'channels_first':
+        if dim_ordering == 'th':
             self.channel_index = 1
             self.dep_index = 2
             self.row_index = 3
             self.col_index = 4
-        if dim_ordering == 'channels_last':
+        if dim_ordering == 'tf':
             self.channel_index = 4
             self.dep_index = 1
             self.row_index = 2
@@ -528,45 +488,7 @@ class ImageDataGenerator(object):
             sigma = np.dot(flatX.T, flatX) / flatX.shape[1]
             U, S, V = linalg.svd(sigma)
             self.principal_components = np.dot(np.dot(U, np.diag(1. / np.sqrt(S + 10e-7))), U.T)
-            
-    def CustomDataLoader(self,x_lists,y_lists,batch_size,input_shape,num_output):
-        while True:
-            L = len(x_lists)
-            (img_dep, img_rows, img_cols, img_channel) = input_shape
-            batch_start = 0
-            batch_end = batch_size
 
-            x_stack = np.zeros((batch_size, img_dep, img_rows, img_cols, 1), dtype=np.float32)
-            y_stack = np.zeros((batch_size, img_dep, img_rows, img_cols, num_output), dtype=np.float32)
-
-            while batch_start < L:
-                limit = min(batch_end, L)
-
-                for i in range(len(x_lists[batch_start:limit])):
-
-                    reader = sitk.ImageFileReader()
-                    reader.SetFileName(x_lists[batch_start:limit][i])
-                    image = sitk.GetArrayFromImage(reader.Execute()).astype('float32')
-                    image = resize(image,img_dep, img_rows, img_cols)
-                    image = np.reshape(image,(img_dep,img_rows,img_cols,1))
-                    image = image_windowing(image,1800,400)
-                    x_stack[i,:,:,:,:] = image[:,:,:,:]
-
-                    reader = sitk.ImageFileReader()
-                    reader.SetFileName(y_lists[batch_start:limit][i])
-                    label = sitk.GetArrayFromImage(reader.Execute()).astype('float32')
-                    label = resize(label,img_dep, img_rows, img_cols)
-                    label_onehot = to_categorical(label)
-                    
-#                     y_stack[i,:,:,:,:] = label_onehot[:,:,:,1:]
-                    y_stack[i,:,:,:,:] = label_onehot[:,:,:,:]
-
-                X = x_stack
-                Y = y_stack
-                yield (X,Y) #a tuple with two numpy arrays with batch_size samples
-
-                batch_start += batch_size
-                batch_end += batch_size
 
 class Iterator(object):
 
