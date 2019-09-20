@@ -1,80 +1,89 @@
-train_im_path,train_mask_path = './x_train','./y_train'
-h,w,batch_size = 512,512,8
-
-val_im_path,val_mask_path = './x_val','./y_val'
-
-class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
-    def __init__(self, train_im_path=train_im_path,train_mask_path=train_mask_path,
-                 augmentations=None, batch_size=batch_size,img_size=512, n_channels=3, shuffle=True):
-        'Initialization'
-        self.batch_size = batch_size
-        self.train_im_paths = glob.glob(train_im_path+'/*')
+# classes for data loading and preprocessing
+class Spine3D_Dataset:
+    """
+    Args:
+        list_image (str): lists of path to images
+        list_mask (str) : lists of path to masks
+        augmentation (albumentations.Compose): data transfromation pipeline 
+            (e.g. flip, scale, etc.)
+    
+    """
+    
+    def __init__(
+            self, 
+            x_list,
+            y_list,
+            phase,
+    ):
         
-        self.train_im_path = train_im_path
-        self.train_mask_path = train_mask_path
-
-        self.img_size = img_size
-        
-        self.n_channels = n_channels
-        self.shuffle = shuffle
-        self.augment = augmentations
-        self.on_epoch_end()
-
-    def __len__(self):
-        'Denotes the number of batches per epoch'
-        return int(np.ceil(len(self.train_im_paths) / self.batch_size))
+        self.x_list = x_list
+        self.y_list = y_list
+        self.phase = phase
 
     def __getitem__(self, index):
-        'Generate one batch of data'
-        # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:min((index+1)*self.batch_size,len(self.train_im_paths))]
+        
+        
+        phase = self.phase        
+        x_idx = self.x_list[index]
+        y_idx = self.y_list[index]
 
-        # Find list of IDs
-        list_IDs_im = [self.train_im_paths[k] for k in indexes]
+        image = data_load_nii(x_idx,return_array=True)
+        image = image_resize_3D(image,img_dep,img_rows,img_cols)
+        image = image_windowing(image,1800,400)
+        
+        image = image_preprocess_float(image)
+        # phase == 'train' augmentation
+        image = np.reshape(image,(img_dep,img_rows,img_cols,1))
 
-        # Generate data
-        X, y = self.data_generation(list_IDs_im)
+        mask = data_load_nii(y_idx,return_array=True)
+        mask = label_resize_3D(mask,img_dep,img_rows,img_cols)
+        mask = to_categorical(mask)
+        mask = mask[...,1:].astype('uint8')
+            
+        return image, mask
+        
+    def __len__(self):
+        return int(len(self.x_list))
+    
+#     
+# class Dataloader(keras.utils.Sequence):
 
-        if self.augment is None:
-            return X,np.array(y)/255
-        else:            
-            im,mask = [],[]   
-            for x,y in zip(X,y):
-                augmented = self.augment(image=x, mask=y)
-                im.append(augmented['image'])
-                mask.append(augmented['mask'])
-            return np.array(im),np.array(mask)/255
+from tensorflow.python.keras.utils.data_utils import Sequence
+class Dataloader(Sequence):
+    """Load data from dataset and form batches
+    
+    Args:
+        dataset: instance of Dataset class for image loading and preprocessing.
+        batch_size: Integet number of images in batch.
+        shuffle: Boolean, if `True` shuffle image indexes each epoch.
+    """
+    
+    def __init__(self, dataset, batch_size=1, shuffle=False):
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.indexes = np.arange(len(dataset))
 
+        self.on_epoch_end()
+
+    def __getitem__(self, i):
+        
+        # collect batch data
+        start = i * self.batch_size
+        stop = (i + 1) * self.batch_size
+        data = []
+        for j in range(start, stop):
+            data.append(self.dataset[j])
+            
+#         print(self.indexes)
+        batch = [np.stack(samples, axis=0) for samples in zip(*data)]
+        return tuple(batch)
+    
+    def __len__(self):
+        """Denotes the number of batches per epoch"""
+        return len(self.indexes) // self.batch_size
+    
     def on_epoch_end(self):
-        'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.train_im_paths))
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
-
-    def data_generation(self, list_IDs_im):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
-        # Initialization
-        X = np.empty((len(list_IDs_im),self.img_size,self.img_size, self.n_channels))
-        y = np.empty((len(list_IDs_im),self.img_size,self.img_size, 1))
-
-        # Generate data
-        for i, im_path in enumerate(list_IDs_im):
-            
-            im = np.array(Image.open(im_path))
-            im = image_preprocess_uint8(im)
-            
-            mask_path = im_path.replace(self.train_im_path,self.train_mask_path)
-            mask = np.array(Image.open(mask_path))
-            
-            if len(im.shape)==2:
-                im = np.repeat(im[...,None],3,2)
-
-#             # Resize sample
-            X[i,] = cv2.resize(im,(self.img_size,self.img_size))
-
-            # Store class
-            y[i,] = cv2.resize(mask,(self.img_size,self.img_size))[..., np.newaxis]
-            y[y>0] = 255
-
-        return np.uint8(X),np.uint8(y)
+        """Callback function to shuffle indexes each epoch"""
+        if self.shuffle:
+            self.indexes = np.random.permutation(self.indexes)
