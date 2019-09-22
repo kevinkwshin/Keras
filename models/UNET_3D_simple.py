@@ -1,4 +1,3 @@
-
 def conv3d(layer_input, filters, axis=-1, pooling=True):
     d = layers.Conv3D(filters, (3, 3, 3), padding='same')(layer_input)
     d = layers.BatchNormalization(axis=axis)(d)
