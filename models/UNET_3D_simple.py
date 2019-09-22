@@ -22,6 +22,9 @@ def deconv3d(layer_input, skip_input, filters, axis=-1):
     return u
 
 def load_3dunet(input_shape, num_labels, init_filter=32, transition_block=5, noise=0.1):
+    """
+    load_3dunet
+    """
     d0 = layers.Input(shape=input_shape)
     d1 = layers.GaussianNoise(noise)(d0)
     d1_skip, d1_out = conv3d(d1, init_filter)
