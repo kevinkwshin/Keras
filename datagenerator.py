@@ -1,25 +1,24 @@
-
-class Spine3D_Dataset:
+class Dataset_Segmentation_CSpine3D_7ch:
     """
     Args:
         list_image (str): lists of path to images
         list_mask (str) : lists of path to masks
         augmentation (albumentations.Compose): data transfromation pipeline 
-            (e.g. flip, scale, etc.)    
+            (e.g. flip, scale, etc.)
     """
+    
     def __init__(
             self, 
             x_list,
             y_list,
+            augmentation=False,
     ):
-        
         self.x_list = x_list
         self.y_list = y_list
         self.augmentation = augmentation
 
     def __getitem__(self, index):
-        
-        augmentation = self.augmentation     
+        """self.augmentation = augmentation"""
         x_idx = self.x_list[index]
         y_idx = self.y_list[index]
 
@@ -28,24 +27,28 @@ class Spine3D_Dataset:
         image = image_windowing(image,1800,400)
         
         image = image_preprocess_float(image)
-        # phase == 'train' augmentation
         image = np.reshape(image,(img_dep,img_rows,img_cols,1))
 
         mask = data_load_nii(y_idx,return_array=True)
         mask = label_resize_3D(mask,img_dep,img_rows,img_cols)
         mask = to_categorical(mask)
-        mask = mask[...,1:]
+        mask = mask[...,1:].astype('uint8')
+        
+        if self.augmentation==True:
+            image = np.reshape(image,(1,image.shape[0],image.shape[1],image.shape[2],image.shape[3]))
+            mask = np.reshape(mask,(1,mask.shape[0],mask.shape[1],mask.shape[2],mask.shape[3]))
+            image, mask = data_aug(image, mask)
+            image = np.reshape(image,(image.shape[1],image.shape[2],image.shape[3],image.shape[4]))
+            mask = np.reshape(mask,(mask.shape[1],mask.shape[2],mask.shape[3],mask.shape[4]))
             
         return image, mask
         
     def __len__(self):
         return int(len(self.x_list))
-    
-    
-# class Dataloader(keras.utils.Sequence):
+
 from tensorflow.python.keras.utils.data_utils import Sequence
 class Dataloader(Sequence):
-    """Load data from dataset and form batches
+    """Load data from dataset and form batches (!!DO NOT MODIFY!!)
     
     Args:
         dataset: instance of Dataset class for image loading and preprocessing.
@@ -62,8 +65,7 @@ class Dataloader(Sequence):
         self.on_epoch_end()
 
     def __getitem__(self, i):
-        
-        # collect batch data
+        """ collect batch data"""
         start = i * self.batch_size
         stop = (i + 1) * self.batch_size
         data = []
