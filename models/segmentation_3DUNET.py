@@ -1,5 +1,6 @@
-from keras.layers import *
-from keras.layers import *
+from tensorflow.keras.layers import *
+from tensorflow.keras.optimizers import *
+from tensorflow.keras.models import Model
 
 def conv3d(layer_input, filters, axis=-1, pooling=True):
     d = layers.Conv3D(filters, (3, 3, 3), padding='same')(layer_input)
