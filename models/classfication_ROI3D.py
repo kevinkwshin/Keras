@@ -1,4 +1,7 @@
-def load_model(input_shape=((64, 224, 224, 3))):
+import keras
+from tensorflow.keras.layers import *
+
+def load_model(input_shape=(64, 224, 224, 3)):
     input_layer = Input(input_shape)
                
     ## convolutional layers
