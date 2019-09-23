@@ -1,5 +1,8 @@
 import keras
+
 from tensorflow.keras.layers import *
+from tensorflow.keras.optimizers import *
+from tensorflow.keras.models import Model
 
 def load_model(input_shape=(64, 224, 224, 3)):
     input_layer = Input(input_shape)
