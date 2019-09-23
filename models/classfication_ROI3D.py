@@ -1,7 +1,3 @@
-# ## input layer
-# input_layer = Input((64, 224, 224, 3))
-
-
 def load_model(input_shape=((64, 224, 224, 3)):
     input_layer = Input(input_shape)
                
