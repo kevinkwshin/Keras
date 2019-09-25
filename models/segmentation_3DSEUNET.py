@@ -1,10 +1,11 @@
+import tensorflow as tf
+from tensorflow.keras import backend as K
+from tensorflow.keras import layers, initializers, regularizers, constraints
+
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing import sequence
 from tensorflow.keras.utils import to_categorical
-
-from tensorflow.keras import layers, initializers, regularizers, constraints
 from tensorflow.keras.layers import *
-from tensorflow.keras import backend as K
 
 def load_model(input_shape, num_labels, axis=-1, base_filter=32, depth_size=4, se_res_block=True, se_ratio=16, noise=0.2, last_relu=False, atten_gate=False):
     
