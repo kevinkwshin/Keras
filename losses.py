@@ -2,22 +2,20 @@ from keras import backend as K
 import tensorflow as tf
 import numpy as np
 
-
-def dice_coef(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred = K.cast(y_pred, 'float32')
-    y_pred_f = K.cast(K.greater(K.flatten(y_pred), 0.5), 'float32')
-    intersection = y_true_f * y_pred_f
-    score = 2. * K.sum(intersection) / (K.sum(y_true_f) + K.sum(y_pred_f))
-    return score
+def dice_score(y_true, y_pred):
+    smooth = 1e-6
+    loss = 0
+    label_length = y_pred.get_shape().as_list()[-1]
+    for num_labels in range(label_length):
+        y_true_f = K.flatten(y_true[..., num_labels])
+        y_pred_f = K.flatten(y_pred[..., num_labels])
+        intersection = K.sum(y_true_f * y_pred_f)
+        loss += (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
+    return loss / label_length
 
 def dice_loss(y_true, y_pred):
-    smooth = 1.
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = y_true_f * y_pred_f
-    score = (2. * K.sum(intersection) + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
-    return 1. - score
+    return -dice_score(y_true, y_pred)
+
 
 def bce_dice_loss(y_true, y_pred):
     return binary_crossentropy(y_true, y_pred) + dice_loss(y_true, y_pred)
