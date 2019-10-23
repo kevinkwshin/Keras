@@ -13,8 +13,9 @@ from six.moves import range
 import os
 import threading
 
-from keras import backend as K
-import keras
+from tensorflow.keras import backend as K
+# from keras import backend as K
+# import keras
 
 
 def random_rotation(x, rg, row_index=2, col_index=3, dep_index = 1, channel_index=0,
